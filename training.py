@@ -8,7 +8,7 @@ from nltk.stem import WordNetLemmatizer
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Activation, Dropout
-from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers.legacy import SGD
 
 lemmatizer = WordNetLemmatizer()
 intents = json.loads(open('intents.json').read())  # load the json file into a json object or a dictionary in python
@@ -53,11 +53,22 @@ for document in documents :
 
 
 random.shuffle(training)
-training = np.array(training)
+training = np.array(training, dtype=object)
 
 # create train and test lists. X - patterns, Y - intents
 train_x = list(training[:,0])
 train_y = list(training[:,1])
 
 model =Sequential()
-model.add(Dense(128,input_shape=(len(train_x[0]),),activation='relu'))
+model.add(Dense(128,input_shape=(len(train_x[0]),),activation='relu'))  # relu is a rectified linear unit function this means that if the input is greater than 0 the output is the input
+model.add(Dropout(0.5)) 
+model.add(Dense(64,activation='relu'))
+model.add(Dropout(0.5)) 
+model.add(Dense(len(train_y[0]),activation='softmax')) # the function that helps us add up the results . its cales up the results to see how lokliy the label is found
+
+sgd = SGD(learning_rate=0.01, momentum=0.9, nesterov=True) ## no idea why this is here
+model.compile(loss='categorical_crossentropy',optimizer=sgd,metrics=['accuracy']) # we choose acccurecy as the metric to see how well the model is doing
+
+model.fit(np.array(train_x),np.array(train_y),epochs=200,batch_size=5,verbose=1) # feed datat 200 times in a batch size of 5 and print the results
+model.save('chatbot_model',model) # save the model
+print('done')
